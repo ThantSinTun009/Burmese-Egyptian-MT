@@ -1,4 +1,4 @@
-# Assignment 6 — Myanmar ↔ Hiero Neural Machine Translation
+# Myanmar ↔ Hiero Neural Machine Translation
 
 A Neural Machine Translation (NMT) project for **Myanmar ↔ Hiero** translation using the **Marian NMT framework**. This project explores sequence-to-sequence (S2S), lightweight Transformer, and model ensemble approaches at syllable level unit.
 
