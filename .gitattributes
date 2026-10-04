@@ -1,0 +1,8 @@
+# Do not count Jupyter notebooks in GitHub language statistics
+notebook/*.ipynb linguist-detectable=false
+
+# Do not count datasets
+data/** linguist-detectable=false
+
+# Do not count generated experiment files
+exp/** linguist-detectable=false
