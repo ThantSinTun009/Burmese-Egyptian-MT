@@ -279,7 +279,7 @@ The ensemble does not require additional training because it combines already-tr
 
 ---
 
-## 🧪 Reproducibility
+## Reproducibility
 
 The experiments use fixed random seeds where applicable and consistent vocabulary files for the Myanmar and Hiero data.
 
@@ -315,7 +315,7 @@ Overall, the results demonstrate that combining different NMT architectures can 
 
 ---
 
-## 👤 Author
+## 👤 Author: Thant Sin Tun
 
 **Assignment 6 — Neural Machine Translation**
 
