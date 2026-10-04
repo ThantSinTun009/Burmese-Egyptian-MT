@@ -1,21 +1,14 @@
 #!/bin/bash
 
-# ==========================================
-# Assignment 6
-# Lightweight Transformer
-# Hiero -> Myanmar
-# Testing
-# ==========================================
-
 DATA="/home/thant_syn/exp/nmt/assignment-6/myhi_data"
-MODEL_DIR="/home/thant_syn/exp/nmt/assignment-6/model.transformer.syl.hi-my"
+MODEL_DIR="/home/thant_syn/exp/nmt/assignment-6/model.transformer.syl.my-hi"
 VOCAB="${DATA}/vocab/vocab.syl.yml"
 
-SRC="${DATA}/test.hi"
-REF="${DATA}/syllable_segmented/syl_test.my"
+SRC="${DATA}/syllable_segmented/syl_test.my"
+REF="${DATA}/test.hi"
 
 echo "=========================================="
-echo "Transformer Hiero -> Myanmar"
+echo "Transformer Myanmar -> Hiero"
 echo "=========================================="
 
 # Generate translation
@@ -23,7 +16,7 @@ marian-decoder \
     -m "${MODEL_DIR}/model.npz" \
     -v "${VOCAB}" "${VOCAB}" \
     -i "${SRC}" \
-    -o "${MODEL_DIR}/hyp.final.my" \
+    -o "${MODEL_DIR}/hyp.final.hi" \
     --beam-size 4 \
     --normalize 0.6 \
     --max-length 50 \
@@ -35,4 +28,4 @@ echo "BLEU Score"
 echo "=========================================="
 
 /home/thant_syn/mosesdecoder/scripts/generic/multi-bleu.perl \
-    "${REF}" < "${MODEL_DIR}/hyp.final.my"
+    "${REF}" < "${MODEL_DIR}/hyp.final.hi"
