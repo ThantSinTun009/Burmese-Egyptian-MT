@@ -1,546 +1,326 @@
-# Burmese-Egyptian-MT
-Machine Translation: Burmese → Egyptian language written in Egyptian hieroglyphic script
+# Assignment 6 — Myanmar ↔ Hiero Neural Machine Translation
 
-**Assignment 6 — Neural Machine Translation (NMT)**
+A Neural Machine Translation (NMT) project for **Myanmar ↔ Hiero** translation using the **Marian NMT framework**. This project explores sequence-to-sequence (S2S), lightweight Transformer, and model ensemble approaches at syllable level unit.
 
-## Overview
+## Project Overview
 
-This project implements a **Neural Machine Translation (NMT)** system for translating between **Myanmar and Hiero** using the **Marian NMT framework**.
+The main objective of this project is to investigate neural machine translation between **Myanmar language and Hiero** using different NMT architectures.
 
-The project is based on the workflow and concepts demonstrated in the following reference notebooks:
+The experiments include:
 
-* `ALT-Corpus-Translation-Tutorial.ipynb`
-* `NMT-Tutorial-with-myContradict.ipynb`
+* S2S (Sequence-to-Sequence) model
+* Lightweight Transformer model
+* S2S + Transformer architecture ensemble
+* Myanmar → Hiero translation
+* Hiero → Myanmar translation
+* BLEU-based evaluation
 
-The main goal is to experiment with different NMT architectures, preprocessing methods, hyperparameters, and translation directions.
+The project also investigates whether combining different model architectures through ensemble decoding can improve translation performance.
 
 ---
 
-## Translation Directions
+## Dataset Structure
 
-Both translation directions are implemented:
+The project uses parallel Myanmar–Hiero data with both word-level and syllable-level preprocessing.
+
+```text
+myhi_data/
+├── syllable_segmented/
+│   ├── syl_train.my
+│   ├── syl_valid.my
+│   └── syl_test.my
+│
+├── word_segmented/
+│   ├── word_train.my
+│   ├── word_valid.my
+│   └── word_test.my
+│
+├── train.hi
+├── valid.hi
+├── test.hi
+│
+└── vocab/
+    ├── vocab.syl.yml
+    └── vocab.word.yml
+```
+
+### Data Direction
+
+**Myanmar → Hiero**
+
+```text
+syl_train.my → train.hi
+syl_valid.my → valid.hi
+syl_test.my  → test.hi
+```
+
+**Hiero → Myanmar**
+
+```text
+train.hi → syl_train.my
+valid.hi → syl_valid.my
+test.hi  → syl_test.my
+```
+
+---
+
+## Models
+
+### 1. Sequence-to-Sequence (S2S)
+
+A recurrent neural network based encoder-decoder architecture was trained using Marian.
+
+The lightweight S2S configuration uses:
+
+* Bidirectional encoder
+* GRU cells
+* 128-dimensional embeddings
+* 128-dimensional RNN states
+* 1 encoder layer
+* 1 decoder layer
+* Dropout: 0.1
+* Maximum sequence length: 50
+
+---
+
+### 2. Lightweight Transformer
+
+A smaller Transformer architecture was used to reduce computational requirements while maintaining the main Transformer structure.
+
+Configuration:
+
+| Parameter           |  Value |
+| ------------------- | -----: |
+| Encoder layers      |      1 |
+| Decoder layers      |      1 |
+| Attention heads     |      2 |
+| Embedding dimension |    128 |
+| FFN dimension       |    256 |
+| Dropout             |    0.1 |
+| Maximum length      |     50 |
+| Beam size           |      4 |
+| Workspace           |   8 MB |
+| Label smoothing     |    0.1 |
+| Learning rate       | 0.0003 |
+
+This lightweight architecture was selected to make training feasible with limited computational resources.
+
+---
+
+## Model Ensemble
+
+In addition to evaluating individual models, an **architecture-level ensemble** was explored by combining the trained S2S and Transformer models during decoding.
+
+```text
+                 ┌──────────────┐
+                 │     S2S      │
+Input ──────────►│              │
+                 └──────┬───────┘
+                        │
+                        ├────► Ensemble Decoder ───► Output
+                        │
+                 ┌──────┴───────┐
+                 │ Transformer  │
+                 └──────────────┘
+```
+
+No additional training was required for the ensemble experiment. The already-trained S2S and Transformer models were combined during decoding.
+
+---
+
+## Experimental Results
+
+BLEU scores were calculated using `multi-bleu.perl`.
+
+### Myanmar → Hiero
+
+| Model                          |      BLEU |
+| ------------------------------ | --------: |
+| S2S                            |     24.04 |
+| Lightweight Transformer        |     29.13 |
+| **S2S + Transformer Ensemble** | **32.50** |
+
+### Hiero → Myanmar
+
+| Model                          |      BLEU |
+| ------------------------------ | --------: |
+| S2S                            |     47.02 |
+| Lightweight Transformer        |     45.23 |
+| **S2S + Transformer Ensemble** | **50.06** |
+
+### Overall Comparison
 
 ```text
 Myanmar → Hiero
+
+S2S                    24.04
+Transformer            29.13
+S2S + Transformer      32.50
+
+
 Hiero → Myanmar
+
+S2S                    47.02
+Transformer            45.23
+S2S + Transformer      50.06
 ```
 
-The same parallel corpus is used while keeping the source-target sentence pairs aligned.
+The ensemble achieved the highest BLEU score in both translation directions.
 
 ---
 
-## Project Workflow
+## Qualitative Analysis
 
-```text
-                    myhi_data
-                       │
-              Myanmar ↔ Hiero
-                       │
-                Parallel Corpus
-                       │
-                 Preprocessing
-                       │
-             Train / Valid / Test
-                       │
-                  Vocabulary
-                       │
-        ┌──────────────┴──────────────┐
-        │                             │
-      Seq2Seq                     Transformer
-        │                             │
-   ┌────┴────┐                   ┌────┴────┐
-   │         │                   │         │
- MY → HI   HI → MY             MY → HI   HI → MY
-   │         │                   │         │
-   └─────────┴───────────────────┴─────────┘
-                       │
-                Hyperparameter
-                    Tuning
-                       │
-                    Testing
-                       │
-              BLEU / PPL / CE
-                       │
-              Qualitative Examples
-                       │
-                Model Comparison
-                       │
-              Optional Ensemble
-```
+The experimental results indicate that combining S2S and Transformer models can improve translation performance compared with using either model independently.
+
+For **Myanmar → Hiero**, the S2S model achieved 24.04 BLEU and the Transformer achieved 29.13 BLEU, while the ensemble reached 32.50 BLEU.
+
+For **Hiero → Myanmar**, S2S achieved 47.02 BLEU and Transformer achieved 45.23 BLEU, while the ensemble achieved 50.06 BLEU.
+
+This suggests that the two architectures can produce complementary predictions. By combining them during decoding, the ensemble can benefit from information captured by both models.
 
 ---
 
-# 1. Dataset
+## Evaluation
 
-The project uses the `myhi_data` parallel corpus containing paired:
-
-* Myanmar sentences
-* Hiero sentences
-
-The parallel sentence alignment is maintained throughout preprocessing and dataset splitting.
-
-The dataset is divided into:
-
-```text
-Train
-Validation
-Test
-```
-
-A fixed random seed is used so that the experiments are reproducible.
-
----
-
-# 2. Preprocessing
-
-Preprocessing is an important part of this project because the quality of the input data can significantly affect NMT performance.
-
-The preprocessing pipeline includes:
-
-```text
-Raw Corpus
-    ↓
-Cleaning
-    ↓
-Normalization
-    ↓
-Sentence Filtering
-    ↓
-Tokenization / Segmentation
-    ↓
-Train / Validation / Test
-```
-
-Depending on the dataset, preprocessing may include:
-
-* Removing unnecessary sentence IDs
-* Cleaning unwanted characters
-* Normalizing text
-* Removing empty sentences
-* Filtering excessively long sentences
-* Myanmar segmentation/tokenization
-* Hiero tokenization/segmentation
-
-The preprocessing method follows the general approach demonstrated in the reference Marian NMT notebooks.
-
----
-
-# 3. Train / Validation / Test Split
-
-The parallel corpus is divided into:
-
-```text
-70% → Training
-20% → Validation
-10% → Testing
-```
-
-A fixed random seed is used to make the split reproducible.
-
-It is important that Myanmar and Hiero sentences remain aligned during splitting.
-
-For example:
-
-```text
-Myanmar sentence 1 ↔ Hiero sentence 1
-Myanmar sentence 2 ↔ Hiero sentence 2
-Myanmar sentence 3 ↔ Hiero sentence 3
-```
-
-The corresponding source and target sentences must always remain together.
-
----
-
-# 4. Vocabulary
-
-Marian NMT vocabulary files are created using `marian-vocab`.
-
-Separate vocabularies are created for the two languages:
-
-```text
-Myanmar vocabulary
-Hiero vocabulary
-```
-
-The vocabulary is constructed from the processed training/validation/test text according to the workflow used in the reference notebooks.
+The main evaluation metric is **BLEU (Bilingual Evaluation Understudy)**.
 
 Example:
 
+```text
+BLEU = 32.50, 58.6/35.1/25.4/22.6
+```
+
+The values represent modified n-gram precision for:
+
+```text
+1-gram / 2-gram / 3-gram / 4-gram
+```
+
+The evaluation also reports:
+
+* Brevity Penalty (BP)
+* Hypothesis length
+* Reference length
+* Length ratio
+
+### Evaluation Note
+
+`multi-bleu.perl` reports a tokenizer-dependent BLEU score. Therefore, the scores in this project are primarily used for **consistent internal comparison between the experiments**.
+
+For publication-quality evaluation, detokenized output with a standardized evaluation script should be considered.
+
+---
+
+## Framework
+
+This project uses:
+
+* **Marian NMT**
+* Bash
+* Linux
+* `multi-bleu.perl`
+
+Marian is used for both model training and decoding.
+
+---
+
+## Main Model Directories
+
+```text
+model.s2s.syl.my-hi/
+    └── Myanmar → Hiero S2S
+
+model.s2s.syl.hi-my/
+    └── Hiero → Myanmar S2S
+
+model.transformer.syl.my-hi/
+    └── Myanmar → Hiero Transformer
+
+model.transformer.syl.hi-my/
+    └── Hiero → Myanmar Transformer
+
+model.ensemble.s2s-tf/
+    └── Myanmar → Hiero Ensemble
+
+model.ensemble.s2s-tf.hi-my/
+    └── Hiero → Myanmar Ensemble
+```
+
+---
+
+## Running the Experiments
+
+### Train S2S
+
 ```bash
-cat train.my valid.my test.my | marian-vocab > my_vocab.yml
+bash train-s2s.sh
 ```
+
+### Train Transformer
 
 ```bash
-cat train.hi valid.hi test.hi | marian-vocab > hi_vocab.yml
+bash train-transformer.sh
 ```
 
-The exact filenames may vary depending on the final dataset structure.
+### Test a trained model
+
+```bash
+bash test-eval.sh
+```
+
+### Run S2S + Transformer Ensemble
+
+```bash
+bash test-ensemble.sh
+```
+
+The ensemble does not require additional training because it combines already-trained models during decoding.
 
 ---
 
-# 5. Seq2Seq Models
+## 🧪 Reproducibility
 
-Marian NMT is used to train Seq2Seq-style NMT models.
+The experiments use fixed random seeds where applicable and consistent vocabulary files for the Myanmar and Hiero data.
 
-Two translation directions are tested.
-
-### 5.1 Myanmar → Hiero
+Important experimental settings include:
 
 ```text
-Source: Myanmar
-Target: Hiero
-```
-
-### 5.2 Hiero → Myanmar
-
-```text
-Source: Hiero
-Target: Myanmar
-```
-
-The two directions are trained and evaluated independently.
-
----
-
-# 6. Transformer Models
-
-Transformer-based NMT models are also implemented using Marian NMT.
-
-Two translation directions are tested.
-
-### 6.1 Myanmar → Hiero
-
-```text
-Source: Myanmar
-Target: Hiero
-```
-
-### 6.2 Hiero → Myanmar
-
-```text
-Source: Hiero
-Target: Myanmar
-```
-
-The Transformer configuration is based on the Marian NMT examples provided in the reference notebooks.
-
----
-
-# 7. Hyperparameter Tuning
-
-Hyperparameter experiments are performed to investigate how model configuration affects translation performance.
-
-Possible parameters include:
-
-```text
-Encoder depth
-Decoder depth
-Transformer heads
-Dropout
-Learning rate
-Batch size
-Early stopping
-Beam size
-Label smoothing
-```
-
-For example, different Transformer configurations can be compared:
-
-```text
-Experiment A
-Encoder depth = 2
-Decoder depth = 2
-Transformer heads = 8
-
-Experiment B
-Encoder depth = 3
-Decoder depth = 3
-Transformer heads = 8
-
-Experiment C
-Encoder depth = 3
-Decoder depth = 3
-Transformer heads = 10
-```
-
-The exact configurations and results will be reported after the experiments are completed.
-
----
-
-# 8. Evaluation
-
-The trained models are evaluated using several metrics.
-
-## BLEU
-
-BLEU is used to measure the similarity between generated translations and reference translations.
-
-In general:
-
-```text
-Higher BLEU → better similarity to the reference translation
-```
-
-BLEU scores are calculated using consistent preprocessing/tokenization between the hypothesis and reference translations.
-
----
-
-## Cross-Entropy
-
-Cross-Entropy (CE) is used to evaluate how well the model predicts the target sequence.
-
-In general:
-
-```text
-Lower Cross-Entropy → better
+Maximum sequence length : 50
+Transformer embedding   : 128
+Transformer heads       : 2
+Transformer FFN         : 256
+Transformer dropout     : 0.1
+Beam size               : 4
+Workspace               : 8 MB
+Learning rate           : 0.0003
+Random seed             : 1111
 ```
 
 ---
 
-## Perplexity
+## Conclusion
 
-Perplexity (PPL) measures the model's uncertainty when predicting the target sequence.
+This project compared S2S and lightweight Transformer architectures for Myanmar ↔ Hiero neural machine translation.
 
-In general:
+The experiments showed that:
 
-```text
-Lower Perplexity → better
-```
+1. The lightweight Transformer outperformed S2S for **Myanmar → Hiero**.
+2. S2S slightly outperformed the Transformer for **Hiero → Myanmar**.
+3. The **S2S + Transformer ensemble achieved the highest BLEU score in both directions**.
+4. Ensemble decoding improved the Myanmar → Hiero score from 29.13 to **32.50 BLEU** compared with the individual Transformer.
+5. For Hiero → Myanmar, the ensemble improved the score to **50.06 BLEU**, compared with 47.02 for S2S and 45.23 for Transformer.
 
----
-
-# 9. Model Comparison
-
-The main experiments compare:
-
-| Model       | Direction       |
-| ----------- | --------------- |
-| Seq2Seq     | Myanmar → Hiero |
-| Seq2Seq     | Hiero → Myanmar |
-| Transformer | Myanmar → Hiero |
-| Transformer | Hiero → Myanmar |
-
-The final results will be summarized using:
-
-| Model       | Direction | BLEU |  CE | PPL |
-| ----------- | --------- | ---: | --: | --: |
-| Seq2Seq     | MY → HI   |  TBD | TBD | TBD |
-| Seq2Seq     | HI → MY   |  TBD | TBD | TBD |
-| Transformer | MY → HI   |  TBD | TBD | TBD |
-| Transformer | HI → MY   |  TBD | TBD | TBD |
-
-`TBD` will be replaced with the actual experimental results.
+Overall, the results demonstrate that combining different NMT architectures can provide complementary information and improve translation performance.
 
 ---
 
-# 10. Qualitative Evaluation
+## 👤 Author
 
-In addition to numerical evaluation, several translation examples are examined manually.
+**Assignment 6 — Neural Machine Translation**
 
-Example format:
+Framework: **Marian NMT**
 
-| # | Source           | Reference       | Seq2Seq | Transformer |
-| - | ---------------- | --------------- | ------- | ----------- |
-| 1 | Myanmar sentence | Hiero reference | Output  | Output      |
-| 2 | Myanmar sentence | Hiero reference | Output  | Output      |
-| 3 | Myanmar sentence | Hiero reference | Output  | Output      |
+Task: **Myanmar ↔ Hiero Translation**
 
-The reverse direction is also evaluated:
-
-| # | Source         | Reference         | Seq2Seq | Transformer |
-| - | -------------- | ----------------- | ------- | ----------- |
-| 1 | Hiero sentence | Myanmar reference | Output  | Output      |
-| 2 | Hiero sentence | Myanmar reference | Output  | Output      |
-| 3 | Hiero sentence | Myanmar reference | Output  | Output      |
-
-These examples help analyze translation quality and identify common translation errors that may not be obvious from BLEU alone.
-
----
-
-# 11. Optional Ensemble
-
-An optional ensemble experiment may be performed after the individual models are successfully trained.
-
-Possible ensemble approaches include:
-
-```text
-Seq2Seq + Transformer
-```
-
-or multiple models of the same architecture:
-
-```text
-Seq2Seq-1 + Seq2Seq-2
-```
-
-```text
-Transformer-1 + Transformer-2
-```
-
-The ensemble experiment is considered an additional experiment and is not required before completing the main Seq2Seq and Transformer experiments.
-
----
-
-# 12. Project Structure
-
-The project can be organized as follows:
-
-```text
-Assignment-6/
-│
-├── README.md
-│
-├── data/
-│   └── myhi_data/
-│
-├── preprocessing/
-│
-├── vocab/
-│   ├── my_vocab.yml
-│   └── hi_vocab.yml
-│
-├── models/
-│   ├── seq2seq_my_hi/
-│   ├── seq2seq_hi_my/
-│   ├── transformer_my_hi/
-│   └── transformer_hi_my/
-│
-├── scripts/
-│   ├── train_seq2seq.sh
-│   ├── train_transformer.sh
-│   └── translate.sh
-│
-├── results/
-│   ├── bleu/
-│   ├── translations/
-│   └── comparisons/
-│
-└── notebooks/
-    └── Assignment-6-NMT.ipynb
-```
-
----
-
-# 13. Notebook Structure
-
-The main Jupyter Notebook follows this structure:
-
-```text
-Assignment-6-NMT.ipynb
-
-01. Introduction
-02. Environment Setup
-03. Dataset Preparation
-04. Dataset Exploration
-05. Preprocessing
-06. Train / Validation / Test Split
-07. Tokenization / Segmentation
-08. Vocabulary Construction
-
-09. Seq2Seq Model
-    09.1 Myanmar → Hiero
-    09.2 Hiero → Myanmar
-
-10. Transformer Model
-    10.1 Myanmar → Hiero
-    10.2 Hiero → Myanmar
-
-11. Hyperparameter Tuning
-
-12. Evaluation
-    12.1 BLEU
-    12.2 Cross-Entropy
-    12.3 Perplexity
-
-13. Qualitative Evaluation
-
-14. Model Comparison
-
-15. Optional Ensemble
-
-16. Conclusion
-```
-
----
-
-# 14. Reference Notebooks
-
-This project is developed with reference to:
-
-```text
-ALT-Corpus-Translation-Tutorial.ipynb
-NMT-Tutorial-with-myContradict.ipynb
-```
-
-These notebooks are used as references for the Marian NMT workflow, including:
-
-* Corpus preparation
-* Preprocessing
-* Train/validation/test splitting
-* Myanmar segmentation
-* Vocabulary construction
-* Marian training
-* Seq2Seq experiments
-* Transformer experiments
-* Hyperparameter configuration
-* Translation testing
-* BLEU evaluation
-* Model comparison
-
-The Assignment 6 implementation is adapted to the `myhi_data` Myanmar–Hiero parallel corpus.
-
----
-
-# 15. Final Goal
-
-The main goal of this project is to investigate Neural Machine Translation between Myanmar and Hiero using Marian NMT.
-
-The project compares:
-
-```text
-Seq2Seq vs Transformer
-```
-
-in both directions:
-
-```text
-Myanmar → Hiero
-Hiero → Myanmar
-```
-
-The experiments evaluate the effect of preprocessing and model configuration using:
-
-```text
-BLEU
-Cross-Entropy
-Perplexity
-Qualitative Translation Examples
-```
-
-The final results are used to compare the different NMT configurations and understand their translation behavior.
-
----
-
-## Requirements
-
-The project requires:
-
-* Python
-* Jupyter Notebook / Google Colab
-* Marian NMT
-* `marian`
-* `marian-vocab`
-* BLEU evaluation tools
-* The `myhi_data` parallel corpus
-
----
-
-## Submission
-
-The final Jupyter Notebook and experiment files should be submitted under:
-
-```text
-assignment-6/submission/
-```
-
-If uploading to the submission folder is not possible, the completed notebook can be submitted to the instructor by email.
+Approaches: **S2S · Transformer · Architecture Ensemble**
